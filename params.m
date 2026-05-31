@@ -19,6 +19,7 @@ zsdot0 = 0;                     % m/s
 zudot0 = 0;                     % m/s
 
 %% accelerometer parameters (ST AIS25BA)
+T_delay = 266e-6;               % 266 microsecondi
 g = 9.81;                       % [m/s^2] gravity constant
 fs = 100;                       % [Hz] sampling frequency
 FS_g = 3.85;                     % [g] full-scale range
