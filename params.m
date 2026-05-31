@@ -21,7 +21,7 @@ zudot0 = 0;                     % m/s
 %% accelerometer parameters (ST AIS25BA)
 g = 9.81;                       % [m/s^2] gravity constant
 fs = 100;                       % [Hz] sampling frequency
-FS_g = 7.7;                     % [g] full-scale range
+FS_g = 3.85;                     % [g] full-scale range
 N_bit = 16;                     % [bit] TDM data slot width
 ND_ug = 30;                     % [ug/sqrt(Hz)] noise density
 
