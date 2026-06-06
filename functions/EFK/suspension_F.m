@@ -1,6 +1,5 @@
-%computation of discrete jacobian Fx
-% state is x = [ x1 x2 x3 x4 ] = [ zs zu zsdot zudot ]
-function Fk = suspension_Fk(x, plant_param, filter_param)
+% Jacobian of discretized (euler) f with respect to x
+function Fk = suspension_F(x, plant_param, filter_param)
 
 %extract params
 ms    = plant_param.ms;

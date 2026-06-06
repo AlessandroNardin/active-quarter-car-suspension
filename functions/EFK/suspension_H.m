@@ -1,6 +1,5 @@
-% computation of discrete measurement jacobian Hk
-% state is x = [ x1 x2 x3 x4 ] = [ zs zu zsdot zudot ]
-function Hk = suspension_Hk(x, plant_param)
+% Jacobian of h with respect to x
+function Hk = suspension_H(x, plant_param)
 
 %extract params
 ms    = plant_param.ms;
@@ -16,7 +15,6 @@ zs = x(1);
 zu = x(2);
 
 delta_s = zs - zu;
-a = ks0 + 3*alpha*delta_s^2;
 
 % continue jacobian
 Hk = zeros(3,4);

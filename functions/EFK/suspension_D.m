@@ -1,8 +1,5 @@
-% computation of discrete jacobian Dw
-% state is x = [ x1 x2 x3 x4 ] = [ zs zu zsdot zudot ]
-% disturbance is w = [ w1 w2 ] = [ zr zrdot ]
-function Dk = suspension_Dk(plant_param, filter_param)
-%#codegen
+% Jacobian of discretized (euler) f with respect to w
+function Dk = suspension_D(plant_param, filter_param)
 
 % extract params
 mu = plant_param.mu;

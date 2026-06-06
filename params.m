@@ -2,92 +2,131 @@ clear all;
 close all;
 clc;
 
-%% plant parameters (suspension)
+%% PLANT PARAMETERS (SUSPENSION)
 plant_param = struct();
-plant_param.ms    = 350;        % kg
-plant_param.mu    = 50;         % kg
-plant_param.ks0   = 20000;      % N/m
-plant_param.alpha = 1e5;        % N/(m^3)
-plant_param.bs    = 1500;       % (N*s)/m
-plant_param.kt    = 180000;     % N/m
-plant_param.bt    = 150;        % (N*s)/m
 
-%% plant initial state
-zs0 = 0;                        % m
-zu0 = 0;                        % m
-zsdot0 = 0;                     % m/s
-zudot0 = 0;                     % m/s
+plant_param.ms    = 350;    % kg
+plant_param.mu    = 50;     % kg
 
-%% accelerometer parameters (ST AIS25BA)
-T_delay = 266e-6;               % 266 microsecondi
-g = 9.81;                       % [m/s^2] gravity constant
-fs = 1000;                       % [Hz] sampling frequency
-FS_g = 3.85;                     % [g] full-scale range
-N_bit = 16;                     % [bit] TDM data slot width
-ND_ug = 30;                     % [ug/sqrt(Hz)] noise density
+plant_param.ks0   = 200;    % N/cm
+plant_param.alpha = 0.1;    % N/(cm^3)
+plant_param.bs    = 15;     % (N*s)/cm
 
-Ts_ZOH = 1 / fs;                % [s] ZOH sample time
-acc_max = FS_g * g;             % [m/s^2] upper saturation limit
-acc_min = -FS_g * g;            % [m/s^2] lower saturation limit
-q_acc = (acc_max - acc_min) / (2^N_bit); % [m/s^2] quantization step
+plant_param.kt    = 1800;   % N/cm
+plant_param.bt    = 1.5;    % (N*s)/cm
 
-ND_SI = (ND_ug * 10^-6) * g;    % [m/s^2/sqrt(Hz)] noise density in SI
-PSD = ND_SI^2;                  % [(m/s^2)^2/Hz] power spectral density
-B_Nyq = fs / 2;                 % [Hz] Nyquist bandwidth
-var_acc = PSD * B_Nyq;          % [(m/s^2)^2] white noise variance
 
-%% linear potentiometer paramters
+%% PLANT INITIAL STATE (PERTURBATION OF THE EQ)
+zs0    = 0;   % cm
+zu0    = 0;   % cm
+zsdot0 = 0;   % cm/s
+zudot0 = 0;   % cm/s
+
+
+%% ACCELEROMETER PARAMETERS (ST AIS25BA)
+g_cms2          = 981;     % [cm/s^2]
+fs_hz           = 1000;    % [Hz]
+full_scale_g    = 3.85;    % [g]
+num_bits        = 16;      % [bit]
+noise_density_ug = 30;     % [ug/sqrt(Hz)]
+
+acc_param = struct();
+
+acc_param.delay       = 0;                                 % [s]
+acc_param.sample_time = 1 / fs_hz;                         % [s]
+
+acc_param.max_acc = full_scale_g * g_cms2;                 % [cm/s^2]
+acc_param.min_acc = -acc_param.max_acc;                    % [cm/s^2]
+
+acc_param.quant_step = (acc_param.max_acc - acc_param.min_acc) / (2^num_bits);
+
+acc_param.noise_var = ((((noise_density_ug * 1e-6) * g_cms2)^2) * (fs_hz / 2)); % [(cm/s^2)^2]
+
+%% ADDED FOR TEST
+%acc_param.noise_var = (0.05)^2;
+
+%% LINEAR POTENTIOMETER PARAMETERS
 lpot_param = struct();
-lpot_param.low_b = -0.05;           % m
-lpot_param.high_b = 0.05;           % m
-lpot_param.noise_std_var = 1*10^-4; % m
-lpot_param.sample_freq = 1000;       % Hz
-lpot_param.n_bit = 32;
 
-%% road parameters
+lpot_param.low_b      = -10;     % cm
+lpot_param.high_b     = 10;      % cm
+lpot_param.noise_var  = (0.1)^2;    % cm^2
+lpot_param.sample_freq = 1000;   % Hz
+lpot_param.n_bit      = 16;
+
+
+%% ROAD
+r_param = struct();
+
+r_param.rz_var    = (0.2)^2;   % cm^2
+r_param.rzdot_var = (2)^2;     % cm^2/s^2
+
+
+%% FILTER PARAMETERS
+filter_param = struct();
+
+filter_param.freq     = 1000;                          % [Hz]
+filter_param.sample_t = 1 / filter_param.freq;        % [s]
+
+filter_param.Q = diag([r_param.rz_var r_param.rzdot_var]);
+filter_param.R = diag([lpot_param.noise_var acc_param.noise_var acc_param.noise_var]);
+
+filter_param.P_init = eye(4)*10;
+filter_param.x_init = [0 0 0 0]';
+
+
+%{
+%% SIMPLE ROAD PARAMETERS [UNUSED]
+low_freq_m  = 1e-2; %[cycles/meter]
+high_freq_m = 1e1;  %[cycles/meter]
+Gdn0 = 128;         %[m^3]
+car_speed = 100;    %[cm/s]
+
+simple_road_param = struct();
+
+simple_road_param.low_freq  = low_freq_m * 1e-2 * car_speed;   %[Hz]
+simple_road_param.high_freq = high_freq_m * 1e-2 * car_speed;  %[Hz]
+
+simple_road_param.road_variance = Gdn0 * 9.99e-9 * 1e4;        %[cm^2]
+
+simple_road_param.road_dot_variance = ( ...
+    (4 * pi^2 * simple_road_param.road_variance) * ...
+    (simple_road_param.low_freq^2 + simple_road_param.high_freq^2 + ...
+     simple_road_param.low_freq * simple_road_param.high_freq) ...
+) / 3;
+
+simple_road_param.sample_t = 1 / 10000;
+
+simple_road_param.road_noise_power     = simple_road_param.road_variance * simple_road_param.sample_t;
+simple_road_param.road_dot_noise_power = simple_road_param.road_dot_variance * simple_road_param.sample_t;
+
+
+%% ROAD PARAMETERS [UNUSED]
 road_param = struct();
-road_param.n0 = 0.1;              % reference spatial frequency [cycles/m]
-road_param.Gqn0 = 16e-7;             % NEED TO FIND VALUE FOR THIS
-road_param.w = 2;                 % ISO waviness exponent
-road_param.low_freq = 1e-2;       % min spatial frequency [cycles/m]
-road_param.high_freq = 1e1;       % max spatial frequency [cycles/m]
-road_param.L = 2000;              % road length [m]
-road_param.k = 3;                 % class-dependent coefficient
-road_param.vehicle_speed = 2;     % vehicle speed [m/s]
-road_param.seed = 213412;         % random seed
 
-% Paper-style bin width
+road_param.n0         = 0.1;     % reference spatial frequency [cycles/m]
+road_param.Gqn0       = 16e-7;   % NEED TO FIND VALUE FOR THIS
+road_param.w          = 2;       % ISO waviness exponent
+road_param.low_freq   = 1e-2;    % min spatial frequency [cycles/m]
+road_param.high_freq  = 1e1;     % max spatial frequency [cycles/m]
+road_param.L          = 2000;    % road length [m]
+road_param.k          = 3;       % class-dependent coefficient
+road_param.vehicle_speed = 2;    % vehicle speed [m/s]
+road_param.seed       = 213412;  % random seed
+
 road_param.delta_n = (2^road_param.k) / road_param.L;
 
-% Number of full bins inside the frequency range
 road_param.num_bins = floor((road_param.high_freq - road_param.low_freq) / road_param.delta_n);
 
-% Frequency vector: use bin centers
-%freq = road_param.low_freq + ((0:num_bins-1) + 0.5) * road_param.delta_n;
-
-% Optional: if you prefer left edges instead of centers, use this instead
 road_param.freq = road_param.low_freq + (0:road_param.num_bins-1) * road_param.delta_n;
 
-% ISO 8608 PSD evaluated at the chosen frequencies
 road_param.Gq = road_param.Gqn0 * (road_param.freq / road_param.n0) .^ (-road_param.w);
 
-% Amplitude vector from PSD times bin width
 road_param.A = sqrt(road_param.Gq * road_param.delta_n);
 
-% Random phases uniformly distributed in [0, 2*pi)
 rng(road_param.seed);
 road_param.phi = 2*pi*rand(size(road_param.freq));
 
-%% Partially Hardcoded, they depend on more parameters than just those listed as they were simplified in this specific case.
-road_param.zr_variance = road_param.Gqn0 * 0.999
-road_param.zrdot_variance = road_param.Gqn0 * (2*pi*2*0.1)^2 * 9.9
-
-%% filter parameters
-filter_param = struct();
-filter_param.freq = 500; % hz
-filter_param.sample_t = 1 / filter_param.freq;
-filter_param.Q = [ road_param.zr_variance 0; 0 road_param.zrdot_variance]; % based on stuff that is to be verified
-filter_param.R = [ lpot_param.noise_std_var^2 0 0; 0 var_acc 0; 0 0 var_acc]; % capire come costruirla [cov disturbo di misura]
-
-
-
+road_param.zr_variance    = road_param.Gqn0 * 0.999;
+road_param.zrdot_variance = road_param.Gqn0 * (2*pi*2*0.1)^2 * 9.9;
+%}
