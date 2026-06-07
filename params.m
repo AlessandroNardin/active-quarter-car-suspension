@@ -66,7 +66,7 @@ filter_param.freq     = 500;                          % [Hz]
 filter_param.sample_t = 1 / filter_param.freq;        % [s]
 
 filter_param.Q = diag([r_param.rz_var r_param.rzdot_var]);
-filter_param.R = diag([lpot_param.noise_var acc_param.noise_var acc_param.noise_var]);
+filter_param.R = diag([lpot_param.noise_var 10 *acc_param.noise_var 100 *acc_param.noise_var]);
 
 filter_param.P_init = eye(4);
 filter_param.x_init = [0 0 0 0]';
