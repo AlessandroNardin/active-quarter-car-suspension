@@ -25,7 +25,7 @@ zudot0 = 0;   % cm/s
 
 %% ACCELEROMETER PARAMETERS (ST AIS25BA)
 g_cms2          = 981;     % [cm/s^2]
-fs_hz           = 1000;    % [Hz]
+fs_hz           = 500;    % [Hz]
 full_scale_g    = 3.85;    % [g]
 num_bits        = 16;      % [bit]
 noise_density_ug = 30;     % [ug/sqrt(Hz)]
@@ -42,16 +42,13 @@ acc_param.quant_step = (acc_param.max_acc - acc_param.min_acc) / (2^num_bits);
 
 acc_param.noise_var = ((((noise_density_ug * 1e-6) * g_cms2)^2) * (fs_hz / 2)); % [(cm/s^2)^2]
 
-%% ADDED FOR TEST
-%acc_param.noise_var = (0.05)^2;
-
 %% LINEAR POTENTIOMETER PARAMETERS
 lpot_param = struct();
 
 lpot_param.low_b      = -10;     % cm
 lpot_param.high_b     = 10;      % cm
 lpot_param.noise_var  = (0.1)^2;    % cm^2
-lpot_param.sample_freq = 1000;   % Hz
+lpot_param.sample_freq = 500;   % Hz
 lpot_param.n_bit      = 16;
 
 
@@ -65,13 +62,13 @@ r_param.rzdot_var = (2)^2;     % cm^2/s^2
 %% FILTER PARAMETERS
 filter_param = struct();
 
-filter_param.freq     = 1000;                          % [Hz]
+filter_param.freq     = 500;                          % [Hz]
 filter_param.sample_t = 1 / filter_param.freq;        % [s]
 
 filter_param.Q = diag([r_param.rz_var r_param.rzdot_var]);
 filter_param.R = diag([lpot_param.noise_var acc_param.noise_var acc_param.noise_var]);
 
-filter_param.P_init = eye(4)*10;
+filter_param.P_init = eye(4);
 filter_param.x_init = [0 0 0 0]';
 
 

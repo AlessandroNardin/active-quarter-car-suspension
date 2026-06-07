@@ -1,6 +1,5 @@
 function [ xcurr, Pcurr, L ] = ekf_step ( xprev, Pprev, uprev, ucurr, z, plant_param, filter_param)
 %% Prediction
-
 % compute new x
 xpred = suspension_f_dics_euler( xprev, uprev, [ 0; 0 ], plant_param, filter_param.sample_t);
 
@@ -30,6 +29,7 @@ xcurr = xpred + L * e;
 
 I = eye(size(Ppred));
 Pcurr = (I - L * H) * Ppred * (I - L * H)' + L * (M * filter_param.R * M') * L';
+
 
 
 
