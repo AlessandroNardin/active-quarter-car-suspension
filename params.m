@@ -4,24 +4,19 @@ clc;
 
 %% PLANT PARAMETERS (SUSPENSION)
 plant_param = struct();
-
 plant_param.ms    = 350;    % kg
 plant_param.mu    = 50;     % kg
-
 plant_param.ks0   = 200;    % N/cm
 plant_param.alpha = 0.1;    % N/(cm^3)
 plant_param.bs    = 15;     % (N*s)/cm
-
 plant_param.kt    = 1800;   % N/cm
 plant_param.bt    = 1.5;    % (N*s)/cm
-
 
 %% PLANT INITIAL STATE (PERTURBATION OF THE EQ)
 zs0    = 0;   % cm
 zu0    = 0;   % cm
 zsdot0 = 0;   % cm/s
 zudot0 = 0;   % cm/s
-
 
 %% ACCELEROMETER PARAMETERS (ST AIS25BA)
 g_cms2          = 981;     % [cm/s^2]
@@ -31,45 +26,72 @@ num_bits        = 16;      % [bit]
 noise_density_ug = 30;     % [ug/sqrt(Hz)]
 
 acc_param = struct();
-
 acc_param.delay       = 0;                                 % [s]
 acc_param.sample_time = 1 / fs_hz;                         % [s]
-
 acc_param.max_acc = full_scale_g * g_cms2;                 % [cm/s^2]
 acc_param.min_acc = -acc_param.max_acc;                    % [cm/s^2]
-
 acc_param.quant_step = (acc_param.max_acc - acc_param.min_acc) / (2^num_bits);
-
 acc_param.noise_var = ((((noise_density_ug * 1e-6) * g_cms2)^2) * (fs_hz / 2)); % [(cm/s^2)^2]
 
 %% LINEAR POTENTIOMETER PARAMETERS
 lpot_param = struct();
-
 lpot_param.low_b      = -10;     % cm
 lpot_param.high_b     = 10;      % cm
 lpot_param.noise_var  = (0.1)^2;    % cm^2
-lpot_param.sample_freq = 500;   % Hz
+lpot_param.sample_freq = 60;   % Hz
 lpot_param.n_bit      = 16;
 
-
-%% ROAD
+%% ROAD PARAMETERS
 r_param = struct();
-
 r_param.rz_var    = (0.2)^2;   % cm^2
 r_param.rzdot_var = (2)^2;     % cm^2/s^2
 
+%% EXTENDED KALMAN FILTER (EKF) PARAMETERS
+ekf_param = struct();
+ekf_param.freq        = 500;                          % [Hz] Filter execution frequency
+ekf_param.sample_t    = 1 / ekf_param.freq;           % [s] Sample time
 
-%% FILTER PARAMETERS
-filter_param = struct();
+% Tuning parameters (Optimized via ekf_covariance_optimization.m)
+ekf_coeff_optimal     = [462.1265, 1.0962, 345.5860]; 
 
-filter_param.freq     = 500;                          % [Hz]
-filter_param.sample_t = 1 / filter_param.freq;        % [s]
+% EKF Covariance Matrices
+ekf_param.Q           = diag([r_param.rz_var, r_param.rzdot_var]); % Native EKF Process noise covariance
+ekf_param.R           = diag([ekf_coeff_optimal(1) * lpot_param.noise_var, ...
+                              ekf_coeff_optimal(2) * acc_param.noise_var, ...
+                              ekf_coeff_optimal(3) * acc_param.noise_var]);
 
-filter_param.Q = diag([r_param.rz_var r_param.rzdot_var]);
-filter_param.R = diag([lpot_param.noise_var 10 *acc_param.noise_var 100 *acc_param.noise_var]);
+% EKF Initialization Properties
+ekf_param.x_init      = [0; 0; 0; 0];                 % Initial state estimate [cm, cm/s, cm, cm/s]
+ekf_param.P_init      = eye(4);                       % Initial state covariance matrix
 
-filter_param.P_init = eye(4);
-filter_param.x_init = [0 0 0 0]';
+%% PARTICLE FILTER (PF) PARAMETERS
+pf_param = struct();
+pf_param.N               = 1000;                      % Number of particles (Synchronized with pf_step.m)
+pf_param.freq            = 500;                       % [Hz] Filter execution frequency
+pf_param.sample_t        = 1 / pf_param.freq;         % [s] Sample time
+pf_param.threshold_n_eff = 0.5;                        % Resampling threshold: N_eff / N (standard at 0.5)
+pf_param.epsilon         = 0.001038;                  % Jitter noise factor (Optimized via pf_covariance_optimization.m)
+
+% Independent Covariance Tuning (Decoupled from EKF)
+pf_param.q_scale         = 4.9375;                    % Process noise scaling factor (Optimized via pf_covariance_optimization.m)
+pf_param.Q               = pf_param.q_scale * diag([r_param.rz_var, r_param.rzdot_var]); % Native PF Process noise covariance
+
+% Independent Measurement Noise (Uses same physical sensor variances but scaled by dedicated PF tuning)
+pf_coeff_optimal         = [462.1265, 1.0962, 345.5860]; 
+pf_param.R               = diag([pf_coeff_optimal(1) * lpot_param.noise_var, ...
+                                 pf_coeff_optimal(2) * acc_param.noise_var, ...
+                                 pf_coeff_optimal(3) * acc_param.noise_var]);
+
+% Independent Initialization Properties
+pf_param.x_init          = [0; 0; 0; 0];              % Initial state estimate [cm, cm/s, cm, cm/s]
+pf_param.P_init          = eye(4);                    % Initial uncertainty covariance for particle seeding
+
+% Particle cloud initialization and noise propagation factors
+pf_param.particles_init  = repmat(pf_param.x_init', pf_param.N, 1) + ...
+                           randn(pf_param.N, 4) * chol(pf_param.P_init);
+pf_param.weights_init    = (1 / pf_param.N) * ones(pf_param.N, 1);
+pf_param.L_Q             = chol(pf_param.Q, 'lower');  % Lower triangular Cholesky factor for process noise injection
+
 
 
 %{

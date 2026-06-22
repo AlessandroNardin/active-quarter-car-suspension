@@ -1,5 +1,5 @@
 % Jacobian of discretized (euler) f with respect to x
-function Fk = suspension_F(x, plant_param, filter_param)
+function Fk = suspension_F(x, plant_param, ekf_param)
 
 %extract params
 ms    = plant_param.ms;
@@ -38,4 +38,4 @@ Ac(4,3) =  (1/mu) * bs;
 Ac(4,4) = -(1/mu) * (bs + bt);
 
 % discrete jacobian
-Fk = eye(4) + filter_param.sample_t * Ac;
+Fk = eye(4) + ekf_param.sample_t * Ac;
