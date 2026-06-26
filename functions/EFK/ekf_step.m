@@ -1,4 +1,4 @@
-function [xcurr, Pcurr, L, e] = ekf_step(xprev, Pprev, uprev, ucurr, z, plant_param, ekf_param, valid_meas)
+function [xcurr, Pcurr, xpred, Ppred, L, e] = ekf_step(xprev, Pprev, uprev, ucurr, z, plant_param, ekf_param, valid_meas)
     %% Prediction
     % compute new x
     xpred = suspension_f_dics_euler(xprev, uprev, [0; 0], plant_param, ekf_param.sample_t);
