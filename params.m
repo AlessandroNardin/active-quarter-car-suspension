@@ -56,9 +56,7 @@ ekf_coeff_optimal     = [462.1265, 1.0962, 345.5860];
 
 % EKF Covariance Matrices
 ekf_param.Q           = diag([r_param.rz_var, r_param.rzdot_var]); % Native EKF Process noise covariance
-ekf_param.R           = diag([ekf_coeff_optimal(1) * lpot_param.noise_var, ...
-                              ekf_coeff_optimal(2) * acc_param.noise_var, ...
-                              ekf_coeff_optimal(3) * acc_param.noise_var]);
+ekf_param.R = diag([lpot_param.noise_var 10 *acc_param.noise_var 100 *acc_param.noise_var]);
 
 % EKF Initialization Properties
 ekf_param.x_init      = [0; 0; 0; 0];                 % Initial state estimate [cm, cm/s, cm, cm/s]
@@ -78,9 +76,8 @@ pf_param.Q               = pf_param.q_scale * diag([r_param.rz_var, r_param.rzdo
 
 % Independent Measurement Noise (Uses same physical sensor variances but scaled by dedicated PF tuning)
 pf_coeff_optimal         = [462.1265, 1.0962, 345.5860]; 
-pf_param.R               = diag([pf_coeff_optimal(1) * lpot_param.noise_var, ...
-                                 pf_coeff_optimal(2) * acc_param.noise_var, ...
-                                 pf_coeff_optimal(3) * acc_param.noise_var]);
+pf_param.R               = diag([lpot_param.noise_var 10 *acc_param.noise_var 100 *acc_param.noise_var]);
+
 
 % Independent Initialization Properties
 pf_param.x_init          = [0; 0; 0; 0];              % Initial state estimate [cm, cm/s, cm, cm/s]
