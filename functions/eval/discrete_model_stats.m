@@ -59,3 +59,27 @@ for i = 1:n
     fprintf('State %d: RMSE=%g, Mean=%g, Max=%g, Min=%g, MeanAbs=%g\n', ...
         i, rmse_state(i), mean_state(i), max_state(i), min_state(i), meanabs_state(i));
 end
+
+% Plot error in 4 vertical subplots (one per state)
+if n ~= 4
+    error('This plotting snippet expects exactly 4 states.');
+end
+
+sample_idx = 1:N;
+
+figure;
+for i = 1:4
+    subplot(4,1,i);
+    plot(sample_idx, e(i,:), 'LineWidth', 1.2);
+    grid on;
+    ylabel(sprintf('e_{%d}', i));
+    title(sprintf('State %d Error', i));
+    
+    if i == 1
+        sgtitle('Discrete model error: true - pred');
+    end
+    
+    if i == 4
+        xlabel('Sample index');
+    end
+end

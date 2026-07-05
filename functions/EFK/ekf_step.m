@@ -33,18 +33,16 @@ function [xcurr, Pcurr, xpred, Ppred, L, e] = ekf_step(xprev, Pprev, uprev, ucur
             
             
             if D_k > mhlb_th
-                valid_meas(i) = 0; % If outlier set to invalid
+                valid_meas(i) = 1; % If outlier set to invalid
             end
         end
         
         % Remove effect of discarded measurements (outliers or old)
-      
         if valid_meas(i) == 0
             % Set rows to zero to delete measurement effect
+            % This is equal to removing the row, this way L size is
+            % constant
             H(i, :) = 0;
-            e(i) = 0;
-            % Set corresponding value in R high value to delete effect
-            R_eff(i,i) = 1e12;
         end
     end
     
