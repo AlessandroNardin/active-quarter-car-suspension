@@ -1,5 +1,5 @@
 % User settings
-exclude_pct = 60;   % percent of initial samples to exclude (0-100)
+exclude_pct = 10;   % percent of initial samples to exclude (0-100)
 
 % Extract data from workspace (as in your snippet)
 x_k      = out.eval_ekf_x_k.Data;       % expected size [n x 1 x N] or [n x N]

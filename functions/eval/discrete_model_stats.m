@@ -2,15 +2,37 @@
 xtrue = squeeze(out.disc_eval_true_state.Data);   % [n x N]
 xpred = squeeze(out.disc_eval_disc_state.Data);   % [n x N]
 
+% User setting: percent of initial samples to skip
+skip_pct = 10;   % example: skip first 10 percent of data
+
 % Basic check
 if ~isequal(size(xtrue), size(xpred))
     error('xtrue and xpred must have the same size [n x N].');
 end
 
+[n, N_total] = size(xtrue);
+
+% Validate skip percentage
+if ~isscalar(skip_pct) || ~isfinite(skip_pct) || skip_pct < 0 || skip_pct >= 100
+    error('skip_pct must be a scalar in the range [0, 100).');
+end
+
+% Compute starting index after skipping first X percent
+N_skip = floor((skip_pct/100) * N_total);
+start_idx = N_skip + 1;
+
+if start_idx > N_total
+    error('Skip percentage leaves no samples to evaluate.');
+end
+
+% Keep only the selected portion
+xtrue_eval = xtrue(:, start_idx:end);
+xpred_eval = xpred(:, start_idx:end);
+
 % Error (true - pred)
-e = xtrue - xpred;        % [n x N]
+e = xtrue_eval - xpred_eval;   % [n x N]
 abs_e = abs(e);
-[n, N] = size(e);
+[~, N] = size(e);
 
 % Per-state stats
 rmse_state     = sqrt(mean(e.^2, 2));    % [n x 1]
@@ -31,7 +53,12 @@ maxabs_all  = max(abs_e(:));
 minabs_all  = min(abs_e(:));
 
 % Pack into struct
-stats.N_total = N;
+stats.skip_pct = skip_pct;
+stats.N_total = N_total;
+stats.N_skip = N_skip;
+stats.start_idx = start_idx;
+stats.N_used = N;
+
 stats.per_state.rmse    = rmse_state;
 stats.per_state.mean    = mean_state;
 stats.per_state.max     = max_state;
@@ -39,6 +66,7 @@ stats.per_state.min     = min_state;
 stats.per_state.meanabs = meanabs_state;
 stats.per_state.maxabs  = maxabs_state;
 stats.per_state.minabs  = minabs_state;
+
 stats.overall.rmse    = rmse_all;
 stats.overall.mean    = mean_all;
 stats.overall.max     = max_all;
@@ -47,14 +75,15 @@ stats.overall.meanabs = meanabs_all;
 stats.overall.maxabs  = maxabs_all;
 stats.overall.minabs  = minabs_all;
 
-% Display concise summary (similar style to EKF script)
-fprintf('Using %d samples (no exclusion), n = %d states\n', N, n);
+% Display concise summary
+fprintf('Using %d/%d samples after skipping first %.2f%% (%d samples), n = %d states\n', ...
+    N, N_total, skip_pct, N_skip, n);
 fprintf('Overall RMSE: %g, Mean: %g, Max: %g, Min: %g\n', ...
     rmse_all, mean_all, max_all, min_all);
 fprintf('Overall Mean abs: %g, Max abs: %g, Min abs: %g\n', ...
     meanabs_all, maxabs_all, minabs_all);
 
-% Per-state lines (similar style to EKF script)
+% Per-state lines
 for i = 1:n
     fprintf('State %d: RMSE=%g, Mean=%g, Max=%g, Min=%g, MeanAbs=%g\n', ...
         i, rmse_state(i), mean_state(i), max_state(i), min_state(i), meanabs_state(i));
@@ -65,7 +94,7 @@ if n ~= 4
     error('This plotting snippet expects exactly 4 states.');
 end
 
-sample_idx = 1:N;
+sample_idx = start_idx:N_total;
 
 figure;
 for i = 1:4
@@ -76,7 +105,7 @@ for i = 1:4
     title(sprintf('State %d Error', i));
     
     if i == 1
-        sgtitle('Discrete model error: true - pred');
+        sgtitle(sprintf('Discrete model error: true - pred (skipped first %.2f%%)', skip_pct));
     end
     
     if i == 4

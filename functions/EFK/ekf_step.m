@@ -1,4 +1,4 @@
-function [xcurr, Pcurr, xpred, Ppred, L, e] = ekf_step(xprev, Pprev, uprev, ucurr, z, plant_param, ekf_param, valid_meas)
+function [xcurr, Pcurr, xpred, Ppred, L, e, n_invalid] = ekf_step(xprev, Pprev, uprev, ucurr, z, plant_param, ekf_param, valid_meas)
     %% Prediction
     % compute new x
     xpred = suspension_f_dics_euler(xprev, uprev, [0; 0], plant_param, ekf_param.sample_t);
@@ -19,21 +19,20 @@ function [xcurr, Pcurr, xpred, Ppred, L, e] = ekf_step(xprev, Pprev, uprev, ucur
     % Outlier detection and Multirate handling
     
     % Mahalanobis threshold (6 for 6-sigma)
-    mhlb_th = 6.0; 
-    
+    mhlb_th = 60.0; 
+    n_invalid = 0;
+
     for i = 1:size(z, 1)
         % Control on new measurements to detect outliers
         if valid_meas(i) == 1
 
             % uncertainty
             S_ii = H(i, :) * Ppred * H(i, :)' + R_eff(i, i);
-            
             % Mahalanobis distance
             D_k = sqrt((e(i)^2) / S_ii);
             
-            
             if D_k > mhlb_th
-                valid_meas(i) = 1; % If outlier set to invalid
+                valid_meas(i) = 0; % If outlier set to invalid
             end
         end
         
@@ -43,6 +42,7 @@ function [xcurr, Pcurr, xpred, Ppred, L, e] = ekf_step(xprev, Pprev, uprev, ucur
             % This is equal to removing the row, this way L size is
             % constant
             H(i, :) = 0;
+            n_invalid = n_invalid + 1;
         end
     end
     

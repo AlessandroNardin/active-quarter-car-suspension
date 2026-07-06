@@ -49,8 +49,8 @@ acc_param.noise_var = 0.216531225;                                      % (cm/s^
 lpot_param = struct();
 lpot_param.freq         = 500;                                           % Hz
 lpot_param.sample_t     = 1 / acc_param.freq;                           % s
-lpot_param.max_d        = 10;                                           % cm 
-lpot_param.min_d        = -10;                                          % cm
+lpot_param.max_d        = 100;                                           % cm 
+lpot_param.min_d        = -100;                                          % cm
 lpot_param.q_step       = (lpot_param.max_d - lpot_param.min_d) / 2^16; % cm
 lpot_param.noise_var    = (0.1)^2;                                      % cm^2
 
@@ -65,13 +65,13 @@ ekf_param.freq      = 500;                          % Hz
 ekf_param.sample_t  = 1 / ekf_param.freq;           % s
 
 % filter init
-ekf_param.x_init    = [0; 0; 0; 0];               
+ekf_param.x_init    = [10; 0; 0; 0];               
 ekf_param.P_init    = eye(4);                      
 
 % process noise matrix
 ekf_param.Q         = diag([u_noise_param.u1_var, u_noise_param.u2_var, r_param.rz_var, r_param.rzdot_var]);
 % measurement noise matrix
-ekf_param.R         = diag([lpot_param.noise_var acc_param.noise_var acc_param.noise_var]);
+ekf_param.R         = diag([lpot_param.noise_var 10* acc_param.noise_var 1000 * acc_param.noise_var]);
 
 %% PARTICLE FILTER (PF) PARAMETERS
 pf_param = struct();
