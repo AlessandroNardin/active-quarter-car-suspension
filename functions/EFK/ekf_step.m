@@ -19,7 +19,7 @@ function [xcurr, Pcurr, xpred, Ppred, L, e, n_invalid] = ekf_step(xprev, Pprev, 
     % Outlier detection and Multirate handling
     
     % Mahalanobis threshold (6 for 6-sigma)
-    mhlb_th = 60.0; 
+    mhlb_th = 30.0; 
     n_invalid = 0;
 
     for i = 1:size(z, 1)
