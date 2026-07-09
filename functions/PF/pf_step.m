@@ -1,68 +1,88 @@
-function [xcurr, particles_curr, weights_curr, Neff, residui_out] = pf_step(particles_prev, weights_prev, uprev, ucurr, z, plant_param, pf_param, valid_meas)
-    % Dynamically retrieve the number of particles from the input matrix size
-    N = size(particles_prev, 1); 
-    
-    % Static allocation based on signal dimensions
-    particles_curr = zeros(N, 4);
+function [xcurr, Pcurr, particles_curr, weights_curr, Neff, residui_out] = pf_step(particles_prev, weights_prev, uprev, ucurr, z, plant_param, pf_param, valid_meas)
+
+    N = size(particles_prev, 1);
+    nx = size(particles_prev, 2);
+
+    particles_curr = zeros(N, nx);
     weights_curr   = zeros(N, 1);
-    xcurr          = zeros(4, 1);
-    
-    Q   = pf_param.Q; 
+    xcurr          = zeros(nx, 1);
+    Pcurr          = zeros(nx, nx);
+
     R   = pf_param.R;
-    L_Q = pf_param.L_Q; 
-    
-    %% Prediction
+    L_Q = pf_param.L_Q;
+
+    %% Prediction HERE I HAVE TO ADD THAT I ADD NOISE SAMPLE TO INPUT TOO
     for i = 1:N
-        % Inject process noise using the lower triangular Cholesky factor
-        noise = L_Q * randn(2, 1);
-        particles_curr(i, :) = suspension_f_dics_euler(particles_prev(i, :)', uprev, noise, plant_param, pf_param.sample_t)';
+        noise = L_Q * randn(4, 1);
+        input_noise = noise(1:2);
+        road_noise = noise(3:4);
+        particles_curr(i, :) = suspension_f_dics_euler( ...
+            particles_prev(i, :)', uprev + road_noise, input_noise, plant_param, pf_param.sample_t)';
     end
-    
-    %% Correction (Likelihood)
-    likelyhood = ones(N, 1);
+
+    %% Correction
+    likelihood = ones(N, 1);
+
     for i = 1:N
         z_hat = suspension_h(particles_curr(i, :)', ucurr, [0; 0], plant_param);
         temp_l = 1.0;
-        
-        % Evaluate sensor measurements considering multirate control
+
         for j = 1:3
             if valid_meas(j) == 1
-                err = (z(j) - z_hat(j)) / sqrt(R(j, j));
-                temp_l = temp_l * exp(-0.5 * err^2);
+                err = z(j) - z_hat(j);
+                nu  = (err^2) / (R(j, j) + eps);
+                
+                if nu >= pf_param.outlier_gate(j)
+                    continue
+                end
+                
+                temp_l = temp_l * exp(-0.5 * nu);
             end
         end
-        likelyhood(i) = temp_l;
+
+        likelihood(i) = temp_l;
     end
-    
-    % Update and normalize weights
-    sum_w        = sum(weights_prev .* likelyhood) + eps;
-    weights_curr = (weights_prev .* likelyhood) / sum_w;
-    
-    % DIAGNOSTICA: Compute the number of effective particles (N_eff) before resampling
+
+    %% Weight update
+    weights_curr = weights_prev .* likelihood;
+    sum_w = sum(weights_curr) + eps;
+    weights_curr = weights_curr / sum_w;
+
     Neff = 1 / (sum(weights_curr.^2) + eps);
-    
-    %% Resampling
-    if Neff < (N * pf_param.threshold_n_eff)
-        s     = cumsum(weights_curr);
-        new_p = zeros(N, 4);
-        
-        for j = 1:N
-            u   = rand(1);
-            idx = 1;
-            while (idx < N) && (s(idx) < u)
-                idx = idx + 1; 
-            end
-            % Apply jittering (epsilon) to avoid particle deprivation/sample impoverishment
-            new_p(j, :) = particles_curr(idx, :) + pf_param.epsilon * randn(1, 4);
-        end
-        particles_curr = new_p;
-        weights_curr   = (1 / N) * ones(N, 1);
-    end
-    
-    %% MMSE State Estimation
+
+    %% State estimate
     xcurr = particles_curr' * weights_curr;
-    
-    % DIAGNOSTICA: Compute measurement residuals based on the MMSE state estimate
+
+    %% State covariance
+    for i = 1:N
+        dx = particles_curr(i, :)' - xcurr;
+        Pcurr = Pcurr + weights_curr(i) * (dx * dx');
+    end
+
+    Pcurr   = 0.5 * (Pcurr + Pcurr');
+
+    %% Residuals from estimated state
     z_est       = suspension_h(xcurr, ucurr, [0; 0], plant_param);
     residui_out = z - z_est;
+
+    %% Resampling
+    if Neff < (N * pf_param.threshold_n_eff)
+        s = cumsum(weights_curr);
+        new_p = zeros(N, nx);
+
+        for j = 1:N
+            u = rand(1);
+            idx = 1;
+
+            while (idx < N) && (s(idx) < u)
+                idx = idx + 1;
+            end
+
+            new_p(j, :) = particles_curr(idx, :) + pf_param.epsilon * randn(1, nx);
+        end
+
+        particles_curr = new_p;
+        weights_curr   = ones(N, 1) / N;
+    end
+
 end

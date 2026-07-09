@@ -21,6 +21,7 @@ plant_param.zudot0 = 0;   % cm/s
 
 %% PERTURBATED PLANT PARAMETER (SUSPENSION)
 error_p = 5; % percentage
+rng(random_seed + 21); 
 perturbed_plant_param = struct();
 perturbed_plant_param.ms    = (error_p*randn/100 + 1) * plant_param.ms;
 perturbed_plant_param.mu    = (error_p*randn/100 + 1) * plant_param.mu;
@@ -81,21 +82,26 @@ pf_param.sample_t        = 1 / pf_param.freq;         % [s] Sample time
 pf_param.threshold_n_eff = 0.5;                        % Resampling threshold: N_eff / N (standard at 0.5)
 pf_param.epsilon         = 0.001038;                  % Jitter noise factor (Optimized via pf_covariance_optimization.m)
 
-% Independent Covariance Tuning (Decoupled from EKF)
-pf_param.q_scale         = 4.9375;                    % Process noise scaling factor (Optimized via pf_covariance_optimization.m)
-pf_param.Q               = pf_param.q_scale * diag([r_param.rz_var, r_param.rzdot_var]); % Native PF Process noise covariance
+% Process noise matrix
+pf_param.Q               = diag([u_noise_param.u1_var, u_noise_param.u2_var, r_param.rz_var, r_param.rzdot_var]);
 
-% Independent Measurement Noise (Uses same physical sensor variances but scaled by dedicated PF tuning)
-pf_coeff_optimal         = [462.1265, 1.0962, 345.5860]; 
-pf_param.R               = diag([lpot_param.noise_var 10 *acc_param.noise_var 100 *acc_param.noise_var]);
+% Measurement noise matrix
+pf_param.R               = diag([lpot_param.noise_var acc_param.noise_var acc_param.noise_var]);
 
+% Outlier gate
+pf_param.outlier_gate = [3.84; 3.84; 3.84];
 
-% Independent Initialization Properties
-pf_param.x_init          = [0; 0; 0; 0];              % Initial state estimate [cm, cm/s, cm, cm/s]
-pf_param.P_init          = eye(4);                    % Initial uncertainty covariance for particle seeding
+% filter init
+pf_param.x_init    = [10; 0; 0; 0];               
+pf_param.P_init    = eye(4);
 
-% Particle cloud initialization and noise propagation factors
-pf_param.particles_init  = repmat(pf_param.x_init', pf_param.N, 1) + ...
-                           randn(pf_param.N, 4) * chol(pf_param.P_init);
+% Particle cloud initialization
+init_chol = chol(pf_param.P_init);
+init_noise = randn(pf_param.N, 4);
+pf_param.particles_init  = repmat(pf_param.x_init', pf_param.N, 1) + init_noise*init_chol;
 pf_param.weights_init    = (1 / pf_param.N) * ones(pf_param.N, 1);
-pf_param.L_Q             = chol(pf_param.Q, 'lower');  % Lower triangular Cholesky factor for process noise injection
+clear init_chol;
+clear init_noise;
+
+% Lower triangular cholesky for noise in prediction
+pf_param.L_Q             = chol(pf_param.Q, 'lower'); 

@@ -1,10 +1,11 @@
+% PF -> same measurements and plots as EKF version
 % User settings
 exclude_pct = 10;   % percent of initial samples to exclude (0-100)
 
 % Extract data from workspace
-x_k      = out.eval_ekf_x_k.Data;       % expected size [n x 1 x N] or [n x N]
-P_k      = out.eval_ekf_P_k.Data;       % not used for these stats but kept
-x_true_k = out.eval_ekf_true_x_k.Data;  % expected size [n x 1 x N] or [n x N]
+x_k      = out.eval_pf_x.Data;           % expected size [n x 1 x N] or [n x N]
+P_k      = out.eval_pf_P.Data;           % kept for compatibility (not used)
+x_true_k = out.eval_ekf_true_x_k.Data;   % true state (filter-independent)
 
 % Ensure shapes are [n x N]
 x_k      = squeeze(x_k);        % now [n x N]
@@ -20,7 +21,6 @@ end
 if exclude_pct < 0 || exclude_pct >= 100
     error('exclude_pct must be in range [0, 100).');
 end
-
 start_idx = floor(N * (exclude_pct/100)) + 1;
 if start_idx > N
     error('exclude_pct too large: no samples left after exclusion.');
@@ -95,9 +95,7 @@ end
 if n ~= 4
     error('This plotting snippet expects exactly 4 states.');
 end
-
 sample_idx = start_idx:N;
-
 figure;
 for i = 1:4
     subplot(4,1,i);
@@ -107,7 +105,7 @@ for i = 1:4
     title(sprintf('State %d Error', i));
     
     if i == 1
-        sgtitle(sprintf('EKF Error: true - estimate (after excluding first %g%%)', exclude_pct));
+        sgtitle(sprintf('PF Error: true - estimate (after excluding first %g%%)', exclude_pct));
     end
     
     if i == 4
