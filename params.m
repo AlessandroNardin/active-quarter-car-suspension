@@ -48,8 +48,8 @@ acc_param.noise_var = 0.216531225;                                      % (cm/s^
 
 %% LINEAR POTENTIOMETER PARAMETERS
 lpot_param = struct();
-lpot_param.freq         = 500;                                           % Hz
-lpot_param.sample_t     = 1 / acc_param.freq;                           % s
+lpot_param.freq         = 100;                                           % Hz
+lpot_param.sample_t     = 1 / lpot_param.freq;                           % s
 lpot_param.max_d        = 100;                                           % cm 
 lpot_param.min_d        = -100;                                          % cm
 lpot_param.q_step       = (lpot_param.max_d - lpot_param.min_d) / 2^16; % cm

@@ -1,4 +1,4 @@
-function [xcurr, Pcurr, particles_curr, weights_curr, Neff, residui_out] = pf_step(particles_prev, weights_prev, uprev, ucurr, z, plant_param, pf_param, valid_meas)
+function [xcurr, particles_curr, weights_curr, Neff, residui_out] = pf_step(particles_prev, weights_prev, uprev, ucurr, z, plant_param, pf_param, valid_meas)
 
     N = size(particles_prev, 1);
     nx = size(particles_prev, 2);
@@ -17,7 +17,7 @@ function [xcurr, Pcurr, particles_curr, weights_curr, Neff, residui_out] = pf_st
         input_noise = noise(1:2);
         road_noise = noise(3:4);
         particles_curr(i, :) = suspension_f_dics_euler( ...
-            particles_prev(i, :)', uprev + road_noise, input_noise, plant_param, pf_param.sample_t)';
+            particles_prev(i, :)', uprev + input_noise, road_noise, plant_param, pf_param.sample_t)';
     end
 
     %% Correction
