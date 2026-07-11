@@ -1,4 +1,4 @@
-function [xcurr, particles_curr, weights_curr, Neff, residui_out] = pf_step(particles_prev, weights_prev, uprev, ucurr, z, plant_param, pf_param, valid_meas)
+function [xcurr, Pcurr, particles_curr, weights_curr, Neff, residui_out] = pf_step(particles_prev, weights_prev, uprev, ucurr, z, plant_param, pf_param, valid_meas)
 
     N = size(particles_prev, 1);
     nx = size(particles_prev, 2);
@@ -11,7 +11,7 @@ function [xcurr, particles_curr, weights_curr, Neff, residui_out] = pf_step(part
     R   = pf_param.R;
     L_Q = pf_param.L_Q;
 
-    %% Prediction HERE I HAVE TO ADD THAT I ADD NOISE SAMPLE TO INPUT TOO
+    %% Prediction
     for i = 1:N
         noise = L_Q * randn(4, 1);
         input_noise = noise(1:2);
