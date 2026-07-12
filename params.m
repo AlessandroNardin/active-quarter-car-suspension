@@ -106,7 +106,7 @@ pf_param.outlier_gate = [3.84; 3.84; 3.84];
 
 % filter init
 pf_param.x_init    = [0; 0; 0; 0];               
-pf_param.P_init    = eye(4);
+pf_param.P_init    = 0.001*eye(4);
 
 % Particle cloud initialization
 init_chol = chol(pf_param.P_init);
