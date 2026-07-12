@@ -13,7 +13,7 @@ fprintf('Initializing baseline parameters from params.m...\n');
 run('params.m');
 
 % 2. Definisci il flag SUBITO DOPO il run (Senza apici!)
-FLAG_NOMINAL_TUNING = true;
+FLAG_NOMINAL_TUNING = false;
 
 % GESTIONE INTELLIGENTE DEL PLANT
 if FLAG_NOMINAL_TUNING  

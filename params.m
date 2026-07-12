@@ -66,7 +66,7 @@ ekf_param.freq      = 500;                          % Hz
 ekf_param.sample_t  = 1 / ekf_param.freq;           % s
 
 % COEFFICIENTI OTTENUTI DALL'OTTIMIZZAZIONE SUL SISTEMA NOMINALE
-optimal_coeff = [9.2127, 478.6327, 400.5872];
+optimal_coeff = [157.5201, 12.4961, 461.2471];
 
 % Filter init
 ekf_param.x_init    = [0; 0; 0; 0];               
@@ -81,15 +81,17 @@ ekf_param.R         = diag([lpot_param.noise_var * optimal_coeff(1),
                             acc_param.noise_var  * optimal_coeff(3)]);
 %% PARTICLE FILTER (PF) PARAMETERS
 pf_param = struct();
-pf_param.N               = 1000;                      % Number of particles (Synchronized with pf_step.m)
+pf_param.N               = 500;                      % Number of particles (Synchronized with pf_step.m)
 pf_param.freq            = 500;                       % [Hz] Filter execution frequency
 pf_param.sample_t        = 1 / pf_param.freq;         % [s] Sample time
 pf_param.threshold_n_eff = 0.5;                        % Resampling threshold: N_eff / N (standard at 0.5)
-pf_param.epsilon         = 0.000053;                  % Jitter noise factor (Optimized via pf_covariance_optimization.m)
-pf_param.q_gain          = 0.001022;
+pf_param.epsilon         = 0.000853;                  % Jitter noise factor (Optimized via pf_covariance_optimization.m)
+pf_param.q_gain          = 0.004677;
 
 % COEFFICIENTI OTTENUTI DALL'OTTIMIZZAZIONE SUL SISTEMA NOMINALE
-optimal_coeff = [9.2127, 478.6327, 400.5872];
+%optimal_coeff = [9.2127, 478.6327, 400.5872];
+
+optimal_coeff = [157.5201, 12.4961, 461.2471];
 
 % Process noise matrix
 pf_param.Q               = pf_param.q_gain* diag([u_noise_param.u1_var, u_noise_param.u2_var, r_param.rz_var, r_param.rzdot_var]);

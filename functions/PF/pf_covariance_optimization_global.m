@@ -11,7 +11,7 @@ clear variables; close all; clc;
 fprintf('=== INIZIALIZZAZIONE OTTIMIZZAZIONE GLOBALE PARTICLE FILTER ===\n');
 run('params.m');
 
-FLAG_NOMINAL_TUNING = true;
+FLAG_NOMINAL_TUNING = false;
 if FLAG_NOMINAL_TUNING  
     perturbed_plant_param = plant_param; 
 end
