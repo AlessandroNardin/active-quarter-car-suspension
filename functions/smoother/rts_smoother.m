@@ -1,8 +1,9 @@
 % Extract data from sim output
-x = out.reg_xprev.Data;
-xpred = out.reg_xpred.Data;
-P = out.reg_Pprev.Data;
-Ppred = out.reg_Ppred.Data;
+x = out.eval_ekf_x_k.Data;
+xpred = out.eval_ekf_x_kp1.Data;
+P = out.eval_ekf_P_k.Data;
+Ppred = out.eval_ekf_P_kp1.Data;
+
 N = size(x,3);
 
 % Compute F for each step
@@ -27,7 +28,7 @@ for i = N-1:-1:1
 end
 
 % Retrieve true trajectory
-xtrue = out.reg_xtrue.Data;
+xtrue = out.disc_eval_true_state.Data;
 
 %% Metrics
 t = 1:N;

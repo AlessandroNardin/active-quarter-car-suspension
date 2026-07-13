@@ -14,10 +14,10 @@ plant_param.kt    = 1800;   % N/cm
 plant_param.bt    = 1.5;    % (N*s)/cm
 
 %% NOMINAL PLANT INITIAL STATE
-plant_param.zs0    = 0;   % cm
-plant_param.zu0    = 0;   % cm
-plant_param.zsdot0 = 0;   % cm/s
-plant_param.zudot0 = 0;   % cm/s
+plant_param.zs0    = 10;   % cm
+plant_param.zu0    = 5;   % cm
+plant_param.zsdot0 = 3;   % cm/s
+plant_param.zudot0 = 3;   % cm/s
 
 %% PERTURBATED PLANT PARAMETER (SUSPENSION)
 error_p = 5; % percentage
@@ -85,8 +85,8 @@ pf_param.N               = 500;                      % Number of particles (Sync
 pf_param.freq            = 500;                       % [Hz] Filter execution frequency
 pf_param.sample_t        = 1 / pf_param.freq;         % [s] Sample time
 pf_param.threshold_n_eff = 0.5;                        % Resampling threshold: N_eff / N (standard at 0.5)
-pf_param.epsilon         = 0.000853;                  % Jitter noise factor (Optimized via pf_covariance_optimization.m)
-pf_param.q_gain          = 1;
+pf_param.epsilon         = 0.000752;                  % Jitter noise factor (Optimized via pf_covariance_optimization.m)
+pf_param.q_gain          = 0.052523;
 
 % COEFFICIENTI OTTENUTI DALL'OTTIMIZZAZIONE SUL SISTEMA NOMINALE
 %optimal_coeff = [9.2127, 478.6327, 400.5872];
